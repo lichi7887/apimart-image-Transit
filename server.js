@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { URL } = require("url");
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 43888;
 const HOST = process.env.HOST || "0.0.0.0";
 const STATIC_DIR = __dirname;
 const FIXED_BASE_URL = "https://api.apimart.ai";

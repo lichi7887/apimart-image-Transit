@@ -1,108 +1,134 @@
 # APIMart Image Bridge
 
-一个用于调用 APIMart `gpt-image-2` 的轻量中转站。
+## 概述
 
-推荐部署方式不是本地 `npm start`，而是：
+APIMart Image Bridge 是一个面向 APIMart `gpt-image-2` 接口的轻量级中转服务。项目提供浏览器端页面用于提交图像生成请求，并通过 Node.js 服务端代理调用上游接口，从而避免浏览器直接访问 APIMart 接口。
 
-1. 先把项目 `git clone` 到服务器
-2. 用 `docker compose` 跑起来
-3. 用宝塔面板或 Nginx 反向代理
-4. 最终通过域名访问
+本项目推荐采用以下部署路径：
 
-## 推荐部署流程
+1. 将项目代码克隆至目标服务器
+2. 使用 Docker Compose 启动服务
+3. 通过宝塔面板或 Nginx 配置反向代理
+4. 通过域名对外提供访问
 
-### 1. 克隆项目
+## 架构说明
 
-先把项目拉到服务器，例如：
+- 应用服务默认监听 `43888` 端口
+- 前端页面通过 `/api/generate` 与 `/api/tasks/:id` 调用本服务
+- 本服务再转发请求至 `https://api.apimart.ai`
+- 用户在页面内输入 APIMart `API Key`，服务端仅用于本次请求转发
+- 任务上下文暂存于服务端内存，不写入数据库
+
+## 运行要求
+
+### 基础要求
+
+- Git
+- Docker
+- Docker Compose
+
+### 可选要求
+
+- 宝塔面板
+- Nginx
+- 已完成解析的域名
+
+## 标准部署流程
+
+### 第一步：获取项目代码
+
+在服务器上执行：
 
 ```bash
 git clone <your-repo-url> apimart-image-bridge
 cd apimart-image-bridge
 ```
 
-如果你是直接上传代码包，也可以把项目放到类似目录：
+如不通过 Git 获取代码，也可将项目上传至服务器目录，例如：
 
 ```text
 /www/wwwroot/apimart-image-bridge
 ```
 
-### 2. 使用 Docker Compose 启动
+## 第二步：使用 Docker Compose 启动服务
 
-项目已经自带 [docker-compose.yml](D:/codex/apimart/apimart%20image%20Transit/docker-compose.yml)。
+项目根目录已包含 [docker-compose.yml](D:/codex/apimart/apimart%20image%20Transit/docker-compose.yml)。
 
-直接执行：
+在项目目录中执行：
 
 ```bash
 docker compose up -d --build
 ```
 
-启动后检查容器：
+启动完成后，建议执行以下命令确认容器状态：
+
+```bash
+docker compose ps
+```
+
+或：
 
 ```bash
 docker ps
 ```
 
-正常情况下你会看到：
+正常情况下，服务将监听以下端口：
 
 ```text
-0.0.0.0:3000->3000/tcp
+0.0.0.0:43888->43888/tcp
 ```
 
-### 3. 本机测试
+## 第三步：验证服务可用性
 
-如果你在服务器本机测试，可以访问：
+在服务器本机访问：
 
 ```text
-http://127.0.0.1:3000
+http://127.0.0.1:43888
 ```
 
-### 4. 配置域名反代
+若页面可正常打开，则说明容器启动成功。
 
-如果你使用宝塔面板，网站反向代理目标地址填：
+## 第四步：配置反向代理并绑定域名
+
+如使用宝塔面板，请创建网站并将该网站配置为反向代理站点。反向代理目标地址应设置为：
 
 ```text
-http://127.0.0.1:3000
+http://127.0.0.1:43888
 ```
 
-配置完成后，就可以通过域名访问。
+完成后，即可通过域名访问该服务。
 
-## 宝塔面板部署
+## 宝塔面板部署说明
 
-### 方法一：宝塔 Docker 管理 + Compose
+### 建站建议
 
-1. 上传或克隆项目到服务器
-2. 确保项目目录中包含 `docker-compose.yml`
-3. 在宝塔中进入 Docker 管理
-4. 导入或使用该 Compose 项目
-5. 启动项目
-6. 确认容器监听 `3000` 端口
-7. 在宝塔网站里添加反向代理，目标地址填 `http://127.0.0.1:3000`
+在宝塔面板中新建网站时：
 
-### 方法二：直接在服务器命令行执行
+- 需要创建网站：是
+- 需要创建 FTP：否
+- 需要创建数据库：否
 
-进入项目目录后执行：
+原因如下：
 
-```bash
-docker compose up -d --build
-```
+- 本项目通过 Docker 容器提供服务
+- 宝塔网站仅用于域名接入与反向代理
+- 当前版本不依赖 MySQL、MariaDB 或其他关系型数据库
 
-然后在宝塔网站中添加反向代理即可。
+### 反向代理配置项
 
-## 宝塔反向代理怎么填
-
-在宝塔网站设置里添加反向代理：
+在宝塔网站设置中新增反向代理时，建议按以下内容填写：
 
 - 代理名称：`apimart`
-- 目标 URL：`http://127.0.0.1:3000`
+- 目标 URL：`http://127.0.0.1:43888`
 - 发送域名：`$host`
 
-## Nginx 反向代理示例
+## Nginx 反向代理配置示例
 
-如果你是直接写 Nginx 配置，可以用：
+如采用 Nginx 手工配置，可参考以下示例：
 
 ```nginx
 location / {
-    proxy_pass http://127.0.0.1:3000;
+    proxy_pass http://127.0.0.1:43888;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -114,9 +140,11 @@ location / {
 }
 ```
 
-## HTTPS 示例
+上述配置可满足本项目当前访问需求，同时保留对升级头的兼容处理。
 
-如果你的域名已经在宝塔中配置好了证书，可以参考：
+## HTTPS 配置示例
+
+如需通过 HTTPS 对外提供服务，可参考以下 Nginx 配置结构：
 
 ```nginx
 server {
@@ -133,7 +161,7 @@ server {
     ssl_certificate_key /www/server/panel/vhost/cert/your-domain/privkey.pem;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:43888;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -146,27 +174,27 @@ server {
 }
 ```
 
-## 常用命令
+## 常用运维命令
 
-### 启动
+### 启动或重建服务
 
 ```bash
 docker compose up -d --build
 ```
 
-### 停止
+### 停止服务
 
 ```bash
 docker compose down
 ```
 
-### 重启
+### 重启服务
 
 ```bash
 docker compose restart
 ```
 
-### 查看状态
+### 查看服务状态
 
 ```bash
 docker compose ps
@@ -178,36 +206,36 @@ docker compose ps
 docker logs -f apimart-image-bridge
 ```
 
-## 常见问题
+## 故障排查
 
-### 1. 宝塔反代后出现 502
+### 1. 宝塔反向代理返回 502
 
-先检查容器是否正常运行：
+通常表示反向代理目标不可用。建议依次检查：
 
 ```bash
 docker ps
 docker logs apimart-image-bridge
 ```
 
-如果 `3000` 端口没起来，宝塔反代一定会报 502。
+并确认 `43888` 端口已正常监听。
 
 ### 2. 域名无法访问
 
-检查这些地方：
+请重点检查以下项目：
 
-- 域名是否解析到服务器
-- 宝塔网站是否创建成功
-- 反向代理是否已经开启
-- 服务器安全组是否放行 `80` / `443`
-- 防火墙是否放行 `80` / `443`
+- 域名是否已解析至服务器公网 IP
+- 宝塔网站是否已正确创建
+- 反向代理是否已启用
+- 防火墙是否已放行 `80` / `443`
+- 云服务器安全组是否已放行 `80` / `443`
 
-### 3. 查询任务失败
+### 3. 任务查询失败
 
-当前任务上下文保存在服务端内存中。如果容器重启，未完成任务的上下文会丢失，需要重新提交请求。
+当前版本将任务上下文保存在服务端内存中。如容器重启，尚未完成的任务上下文将丢失，因此需要重新提交生成请求。
 
-## 可选：本地 Node 方式运行
+## 本地开发说明
 
-如果你只是本地开发调试，也可以用 Node.js 直接运行：
+本项目支持通过 Node.js 直接运行，但该方式仅建议用于本地开发或临时调试，不作为标准部署方式。
 
 ```bash
 npm install
@@ -217,7 +245,11 @@ npm start
 默认访问地址：
 
 ```text
-http://127.0.0.1:3000
+http://127.0.0.1:43888
 ```
 
-但正式部署时，仍然推荐优先使用 Docker + 反代。
+## 生产环境注意事项
+
+- 当前版本未引入持久化任务存储
+- 如需提高稳定性，建议将任务上下文迁移至 Redis 或数据库
+- 如需多人共用，建议补充鉴权、访问控制与审计日志能力
