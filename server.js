@@ -30,6 +30,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (requestUrl.pathname === "/api/uploads/images" && req.method === "POST") {
+      await handleImageUpload(req, res);
+      return;
+    }
+
     if (requestUrl.pathname.startsWith("/api/tasks/") && req.method === "GET") {
       await handleTaskStatus(req, res, requestUrl);
       return;
@@ -126,6 +131,34 @@ async function handleTaskStatus(req, res, requestUrl) {
   sendJson(res, upstream.status, result);
 }
 
+async function handleImageUpload(req, res) {
+  const apiKey = String(req.headers["x-api-key"] || "").trim();
+  const contentType = String(req.headers["content-type"] || "");
+
+  if (!apiKey) {
+    sendJson(res, 400, { error: { message: "apiKey is required" } });
+    return;
+  }
+
+  if (!contentType.toLowerCase().includes("multipart/form-data")) {
+    sendJson(res, 400, { error: { message: "multipart/form-data is required" } });
+    return;
+  }
+
+  const body = await readBody(req);
+  const upstream = await fetch(`${FIXED_BASE_URL}/v1/uploads/images`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": contentType,
+    },
+    body,
+  });
+
+  const result = await readUpstreamJson(upstream);
+  sendJson(res, upstream.status, result);
+}
+
 function serveStatic(requestPath, res, method) {
   const safePath = requestPath === "/" ? "/index.html" : requestPath;
   const filePath = path.normalize(path.join(STATIC_DIR, safePath));
@@ -172,17 +205,20 @@ async function readJsonBody(req) {
 
 function readBody(req) {
   return new Promise((resolve, reject) => {
-    let data = "";
+    const chunks = [];
+    let totalLength = 0;
 
     req.on("data", (chunk) => {
-      data += chunk;
-      if (data.length > 2 * 1024 * 1024) {
+      const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      chunks.push(bufferChunk);
+      totalLength += bufferChunk.length;
+      if (totalLength > 20 * 1024 * 1024) {
         reject(new Error("Request body too large"));
         req.destroy();
       }
     });
 
-    req.on("end", () => resolve(data));
+    req.on("end", () => resolve(Buffer.concat(chunks, totalLength)));
     req.on("error", reject);
   });
 }

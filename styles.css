@@ -179,7 +179,7 @@ body {
 .form { display: grid; gap: 16px; }
 .params {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   border: none;
 }
@@ -191,6 +191,16 @@ body {
   color: var(--text-3);
   letter-spacing: .03em;
   text-transform: uppercase;
+}
+.ctrl__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ctrl__link-btn {
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 input, textarea, select {
@@ -280,6 +290,31 @@ button:disabled { opacity: .45; cursor: wait; pointer-events: none; }
 }
 .form__foot .btn--accent { flex: 1; }
 
+.composer-box {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  background: var(--surface-0);
+}
+.composer-box__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.composer-upload-btn { text-decoration: none; }
+.composer-hint {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
 /* ---------- foldable sections ---------- */
 .fold { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
 .fold--sub { margin-top: 14px; }
@@ -332,14 +367,89 @@ details[open] > .fold__head .fold__arrow { transform: rotate(180deg); }
 }
 .chip:hover { border-color: var(--border-hi); }
 
-/* references */
-.reference-panel { display: grid; gap: 10px; }
-.reference-list { display: grid; gap: 8px; }
-.reference-item {
-  display: grid;
-  grid-template-columns: 1fr auto;
+/* attachments */
+.attachment-tray {
+  display: flex;
   gap: 8px;
-  align-items: start;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+.attachment-chip {
+  display: grid;
+  gap: 8px;
+  width: 118px;
+}
+.attachment-chip__thumb {
+  position: relative;
+  width: 118px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.attachment-chip__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.attachment-chip__remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(16,16,16,.82);
+  border: 1px solid rgba(255,255,255,.08);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0;
+}
+.attachment-chip__remove:hover {
+  background: rgba(224,60,49,.88);
+}
+.attachment-chip__meta {
+  display: grid;
+  gap: 4px;
+}
+.attachment-chip__name {
+  font-size: 11px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.attachment-chip__state {
+  min-height: 18px;
+}
+.attachment-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.attachment-state--loading {
+  border: 2px solid rgba(255,255,255,.15);
+  border-top-color: var(--red);
+  animation: spin .85s linear infinite;
+}
+.attachment-state--success {
+  color: #fff;
+  background: rgba(61,220,132,.85);
+}
+.attachment-state--error {
+  color: #fff;
+  background: rgba(224,60,49,.88);
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ---------- indicators ---------- */
@@ -621,7 +731,7 @@ details[open] > summary .collapse-indicator { transform: rotate(180deg); }
   .header__title { font-size: 1.15rem; }
 
   .params {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 
@@ -640,7 +750,12 @@ details[open] > summary .collapse-indicator { transform: rotate(180deg); }
   .history-row { flex-direction: column; align-items: stretch; }
   .history-actions-group { display: grid; grid-template-columns: 1fr; }
 
-  .reference-item { grid-template-columns: 1fr; }
+  .attachment-chip {
+    width: calc(50% - 4px);
+  }
+  .attachment-chip__thumb {
+    width: 100%;
+  }
 
   .form__foot { flex-direction: column; }
   .form__foot .btn--accent { order: -1; }

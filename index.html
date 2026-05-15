@@ -12,8 +12,6 @@
 <body>
 
 <div class="page">
-
-  <!-- ====== HEADER ====== -->
   <header class="header">
     <div class="header__brand">
       <span class="header__tag">GPT-Image-2</span>
@@ -30,34 +28,19 @@
     </nav>
   </header>
 
-  <!-- hidden banner kept for app.js compatibility -->
   <div class="result-intro-banner" style="display:none"><p></p></div>
 
-  <!-- ====== MAIN TWO-COLUMN ====== -->
   <main class="main">
-
-    <!-- LEFT: COMPOSER -->
     <section class="col col--composer">
       <div class="card card--primary">
-
         <div class="card__head">
           <h2>控制台</h2>
           <span class="pill">Prompt</span>
         </div>
 
         <form id="imageForm" class="form">
-
-          <!-- parameter grid -->
           <fieldset class="params">
             <legend class="sr-only">参数</legend>
-            <label class="ctrl">
-              <span class="ctrl__label">模式</span>
-              <select id="mode" name="mode">
-                <option value="text">文生图</option>
-                <option value="image">图生图</option>
-                <option value="multi">多图融合</option>
-              </select>
-            </label>
             <label class="ctrl">
               <span class="ctrl__label">比例</span>
               <select id="aspectRatio" name="aspectRatio">
@@ -108,13 +91,23 @@
             </label>
           </fieldset>
 
-          <!-- prompt textarea -->
-          <label class="ctrl ctrl--full">
-            <span class="ctrl__label">提示词</span>
-            <textarea id="prompt" name="prompt" rows="7" placeholder="描述你想要的画面..." required></textarea>
-          </label>
+          <div class="composer-box">
+            <div class="composer-box__head">
+              <span class="ctrl__label">提示词</span>
+              <div class="composer-actions">
+                <label class="btn btn--ghost btn--sm composer-upload-btn" for="referenceUploadInput">上传图片</label>
+                <input id="referenceUploadInput" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple hidden>
+              </div>
+            </div>
 
-          <!-- negative prompt -->
+            <div id="attachmentTray" class="attachment-tray" hidden></div>
+
+            <label class="ctrl ctrl--full">
+              <textarea id="prompt" name="prompt" rows="7" placeholder="描述你想要的画面，或直接在这里粘贴图片..." required></textarea>
+            </label>
+            <p class="composer-hint">单张图片自动按图生图提交，多张图片按粘贴顺序作为多图输入。</p>
+          </div>
+
           <details class="negative-panel fold">
             <summary class="fold__head">
               <span class="fold__title">反向提示词</span>
@@ -136,28 +129,15 @@
             </div>
           </details>
 
-          <!-- reference images -->
-          <section id="referenceSection" class="reference-panel fold--static">
-            <h3 class="fold__title">参考图片</h3>
-            <p class="fold__hint">支持公网 URL 和 base64 data URI</p>
-            <div id="referenceList" class="reference-list"></div>
-            <button id="addReferenceBtn" type="button" class="btn btn--outline btn--sm">+ 添加参考图</button>
-          </section>
-
-          <!-- actions -->
           <div class="form__foot">
             <button type="submit" class="btn btn--accent">开始生成</button>
             <button id="resetBtn" type="button" class="btn btn--ghost">重置</button>
           </div>
-
         </form>
       </div>
     </section>
 
-    <!-- RIGHT: RESULTS -->
     <section class="col col--output">
-
-      <!-- live indicators -->
       <div class="card card--compact indicators">
         <div class="indicator">
           <span class="indicator__label">模式</span>
@@ -173,14 +153,11 @@
         </div>
       </div>
 
-      <!-- result panel -->
       <div class="card result-panel">
-
         <div class="card__head">
           <h2>输出</h2>
         </div>
 
-        <!-- gallery -->
         <div id="resultGallery" class="gallery empty">
           <div class="gallery__placeholder">
             <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><rect x="8" y="12" width="40" height="32" rx="5" stroke="currentColor" stroke-width="1.6" opacity=".18"/><circle cx="20" cy="24" r="4" stroke="currentColor" stroke-width="1.6" opacity=".18"/><polyline points="8,40 18,30 28,36 38,24 48,34" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity=".18"/></svg>
@@ -188,7 +165,6 @@
           </div>
         </div>
 
-        <!-- request details (collapsible) -->
         <details id="requestDetails" class="status-box fold fold--sub">
           <summary class="fold__head collapsible-summary">
             <span class="fold__title">请求详情</span>
@@ -197,7 +173,6 @@
           <code id="requestPreview" class="fold__code">尚未提交请求</code>
         </details>
 
-        <!-- meta row -->
         <div class="result-meta">
           <div class="meta-cell">
             <span class="meta-label">任务 ID</span>
@@ -209,14 +184,12 @@
           </div>
         </div>
 
-        <!-- raw JSON -->
         <div id="rawResult" class="raw-result" hidden>
           <h3 class="raw-result__title">原始响应</h3>
           <pre id="rawResultContent"></pre>
         </div>
       </div>
 
-      <!-- history -->
       <div class="card history-panel">
         <div class="card__head">
           <h2>历史</h2>
@@ -229,12 +202,10 @@
           <p>暂无历史记录。</p>
         </div>
       </div>
-
     </section>
   </main>
 </div>
 
-<!-- ====== SETTINGS MODAL ====== -->
 <div id="settingsModal" class="modal-backdrop" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <div class="modal__head">
@@ -252,7 +223,10 @@
         <input id="fixedBaseUrl" type="text" value="https://api.apimart.ai" readonly>
       </label>
       <label class="ctrl">
-        <span class="ctrl__label">API Key</span>
+        <span class="ctrl__label-row">
+          <span class="ctrl__label">API Key</span>
+          <a class="btn btn--ghost btn--sm ctrl__link-btn" href="https://apimart.ai/zh" target="_blank" rel="noopener noreferrer">获取 Key</a>
+        </span>
         <input id="apiKey" name="apiKey" type="password" placeholder="sk-..." required>
       </label>
       <label class="ctrl">
@@ -289,14 +263,6 @@
     </div>
   </div>
 </div>
-
-<!-- ====== TEMPLATE ====== -->
-<template id="referenceTemplate">
-  <div class="reference-item">
-    <textarea class="reference-input" rows="2" placeholder="图片 URL 或 base64 data URI"></textarea>
-    <button type="button" class="btn btn--danger btn--sm remove-reference">删除</button>
-  </div>
-</template>
 
 <script src="./app.js"></script>
 </body>
