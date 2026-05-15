@@ -5,11 +5,11 @@ const MAX_HISTORY_ITEMS = 20;
 
 const NEGATIVE_TEMPLATES = {
   general:
-    "worst quality, low quality, normal quality, lowres, blurry, out of focus, noise, grain, jpeg artifacts, watermark, text, logo, signature, username, cropped, out of frame, duplicate, extra limbs, extra fingers, missing fingers, fused fingers, malformed hands, bad hands, bad anatomy, deformed, disfigured, mutated, unnatural pose, broken limbs, long neck, cross-eye, lazy eye, asymmetrical eyes, bad face, distorted face, poorly drawn face, poorly drawn hands, extra arms, extra legs, missing arms, missing legs, floating limbs, disconnected limbs, inaccurate proportions, ugly, messy background, cluttered background, oversaturated, underexposed, overexposed",
+    "worst quality, low quality, normal quality, lowres, blurry, out of focus, noise, grain, jpeg artifacts, watermark, cropped, out of frame, duplicate, extra limbs, extra fingers, missing fingers, fused fingers, malformed hands, bad hands, bad anatomy, deformed, disfigured, mutated, unnatural pose, broken limbs, long neck, cross-eye, lazy eye, asymmetrical eyes, bad face, distorted face, poorly drawn face, poorly drawn hands, extra arms, extra legs, missing arms, missing legs, floating limbs, disconnected limbs, inaccurate proportions, ugly, messy background, cluttered background, oversaturated, underexposed, overexposed",
   portrait:
-    "worst quality, low quality, lowres, blurry, bad anatomy, bad proportions, deformed, disfigured, malformed hands, extra fingers, fused fingers, missing fingers, bad hands, extra limbs, missing limbs, unnatural pose, twisted body, broken body, distorted face, asymmetrical eyes, cross-eyed, poorly drawn face, poorly drawn hands, ugly, duplicate, watermark, text, logo, signature, jpeg artifacts",
+    "worst quality, low quality, lowres, blurry, bad anatomy, bad proportions, deformed, disfigured, malformed hands, extra fingers, fused fingers, missing fingers, bad hands, extra limbs, missing limbs, unnatural pose, twisted body, broken body, distorted face, asymmetrical eyes, cross-eyed, poorly drawn face, poorly drawn hands, ugly, duplicate, watermark, jpeg artifacts",
   anime:
-    "bad composition, flat color, messy lines, sketch, unfinished, rough draft, bad perspective, inconsistent lighting, extra character, duplicated features",
+    "bad composition, flat color, messy lines, sketch, unfinished, rough draft, bad perspective, inconsistent lighting, extra character, duplicated features, lowres, blurry, worst quality, low quality, deformed, bad anatomy",
 };
 
 const DEFAULTS = {
@@ -66,6 +66,9 @@ const elements = {
   historyList: document.getElementById("historyList"),
   refreshHistoryBtn: document.getElementById("refreshHistoryBtn"),
   clearHistoryBtn: document.getElementById("clearHistoryBtn"),
+  lightboxModal: document.getElementById("lightboxModal"),
+  lightboxImage: document.getElementById("lightboxImage"),
+  lightboxCloseBtn: document.getElementById("lightboxCloseBtn"),
 };
 
 let activePoll = null;
@@ -216,6 +219,27 @@ function attachEvents() {
     renderRawResult(null);
     renderGallery([]);
   });
+
+  elements.lightboxCloseBtn.addEventListener("click", closeLightbox);
+  elements.lightboxModal.addEventListener("click", (event) => {
+    if (event.target === elements.lightboxModal) closeLightbox();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !elements.lightboxModal.hidden) closeLightbox();
+  });
+
+  document.addEventListener("click", (event) => {
+    const downloadTrigger = event.target.closest("[data-force-download]");
+    if (!downloadTrigger) return;
+    event.preventDefault();
+    forceDownload(downloadTrigger.dataset.forceDownload);
+  });
+
+  document.addEventListener("click", (event) => {
+    const img = event.target.closest("[data-lightbox]");
+    if (!img) return;
+    openLightbox(img.dataset.lightbox);
+  });
 }
 
 function hydrateForm(savedState = {}) {
@@ -339,14 +363,14 @@ function renderHistory() {
         : (item.previewImage ? [item.previewImage] : []);
 
       const previewMarkup = previewImages[0]
-        ? `<div class="history-thumb"><img src="${escapeHtml(previewImages[0])}" alt="历史缩略图"></div>`
+        ? `<div class="history-thumb" style="cursor:zoom-in"><img src="${escapeHtml(previewImages[0])}" alt="历史缩略图" data-lightbox="${escapeHtml(previewImages[0])}"></div>`
         : `<div class="history-thumb"><div class="history-placeholder">等待生成结果</div></div>`;
 
       const downloadButtons = previewImages.length
         ? `<div class="history-download-list">${previewImages
             .map(
-              (url, index) =>
-                `<a class="secondary history-download" href="${escapeHtml(url)}" download target="_blank" rel="noopener noreferrer">下载结果 ${index + 1}</a>`
+              (url) =>
+                `<button type="button" class="secondary history-download" data-force-download="${escapeHtml(url)}">下载</button>`
             )
             .join("")}</div>`
         : "";
@@ -885,11 +909,11 @@ function renderGallery(imageUrls) {
     .map(
       (url, index) => `
         <article class="image-card">
-          <img src="${escapeHtml(url)}" alt="生成结果 ${index + 1}">
+          <img src="${escapeHtml(url)}" alt="生成结果 ${index + 1}" data-lightbox="${escapeHtml(url)}" style="cursor:zoom-in">
           <div class="image-card-body">
             <strong>结果 ${index + 1}</strong>
             <code>${escapeHtml(url)}</code>
-            <a class="btn btn--ghost btn--sm download-link" href="${escapeHtml(url)}" download target="_blank" rel="noopener noreferrer">下载图片</a>
+            <button type="button" class="btn btn--ghost btn--sm download-link" data-force-download="${escapeHtml(url)}">下载</button>
           </div>
         </article>
       `
@@ -989,6 +1013,34 @@ function writeCookie(name, value, days) {
 
 function clearStorage() {
   writeCookie(STORAGE_KEY, "", -1);
+}
+
+function openLightbox(src) {
+  elements.lightboxImage.src = src;
+  elements.lightboxModal.hidden = false;
+}
+
+function closeLightbox() {
+  elements.lightboxModal.hidden = true;
+  elements.lightboxImage.src = "";
+}
+
+async function forceDownload(url) {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    const filename = url.split("/").pop().split("?")[0] || "image.png";
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    window.open(url, "_blank");
+  }
 }
 
 function wait(ms) {

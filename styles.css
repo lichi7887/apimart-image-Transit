@@ -255,6 +255,7 @@ button:disabled { opacity: .45; cursor: wait; pointer-events: none; }
   box-shadow: 0 2px 12px var(--red-dim);
 }
 .btn--accent:hover { box-shadow: 0 4px 20px var(--red-glow); filter: brightness(1.1); }
+.btn--accent:disabled { background: var(--surface-3); color: var(--text-3); box-shadow: none; }
 .btn--ghost {
   background: transparent;
   color: var(--text-2);
@@ -780,6 +781,31 @@ details[open] > summary .collapse-indicator { transform: rotate(180deg); }
 }
 
 /* ---------- print ---------- */
+.lightbox-card {
+  position: relative;
+  max-width: 92vw;
+  max-height: 92vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modalIn .28s cubic-bezier(.34,1.56,.64,1);
+}
+.lightbox-card img {
+  max-width: 90vw;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  display: block;
+}
+.lightbox-close {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  z-index: 10;
+  background: var(--surface-1);
+  border: 1px solid var(--border-hi);
+}
+
 @media print {
   .header__nav, .form__foot, .modal-backdrop { display: none; }
   body { background: #fff; color: #111; }
